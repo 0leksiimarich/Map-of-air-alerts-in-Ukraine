@@ -1,7 +1,7 @@
 const themeToggle = document.getElementById("themeToggle");
 const reloadBtn = document.getElementById("reloadMap");
-const citySelect = document.getElementById("citySelect");
 const alertCitiesDiv = document.getElementById("alertCities");
+const highCitiesDiv = document.getElementById("highCities");
 const droneCitiesDiv = document.getElementById("droneCities");
 
 function setTheme(theme) {
@@ -11,23 +11,18 @@ function setTheme(theme) {
 }
 
 setTheme(localStorage.getItem("theme") || "light");
-
 themeToggle.addEventListener("click", () => {
   const current = document.documentElement.getAttribute("data-theme");
   setTheme(current === "dark" ? "light" : "dark");
 });
 
-// --- Ініціалізація карти (чорно-біла)
+// --- Карта чорно-біла
 const map = L.map("map").setView([49.0, 32.0], 6);
 L.tileLayer("https://tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap contributors"
 }).addTo(map);
 
-let cityMarkers = {};
-let droneMarkers = {};
-let cityStatus = {};
-
-// --- Координати міст
+// --- Міста та координати
 const cities = {
   kyiv: [50.45, 30.523],
   lviv: [49.8397, 24.0297],
@@ -52,66 +47,69 @@ const cities = {
   cherkasy: [49.4444, 32.0598]
 };
 
-// --- Ініціалізація маркерів
-for (const [city, coords] of Object.entries(cities)) {
-  const marker = L.circleMarker(coords, { radius: 10, color: "blue", fillColor: "blue", fillOpacity: 0.8 })
-    .addTo(map)
-    .bindPopup(city);
-  cityMarkers[city] = marker;
-  cityStatus[city] = "off";
-}
-
-// --- Дрони (приклад статично для старту)
-const drones = {
-  kyiv: [50.46, 30.52],
-  lviv: [49.84, 24.03]
+const cityNames = {
+  kyiv: "Київ", lviv: "Львів", kharkiv: "Харків", odesa: "Одеса",
+  dnipro: "Дніпро", zaporizhzhia: "Запоріжжя", vinnytsia: "Вінниця",
+  ternopil: "Тернопіль", "ivano-frankivsk": "Івано-Франківськ",
+  rivne: "Рівне", zhytomyr: "Житомир", chernihiv: "Чернігів",
+  chernivtsi: "Чернівці", sumy: "Суми", kropyvnytskyi: "Кропивницький",
+  mykolaiv: "Миколаїв", lutsk: "Луцьк", kherson: "Херсон",
+  poltava: "Полтава", khmelnytskyi: "Хмельницький", cherkasy: "Черкаси"
 };
 
-for (const [city, coords] of Object.entries(drones)) {
-  const marker = L.circleMarker(coords, { radius: 6, color: "yellow", fillColor: "yellow", fillOpacity: 0.9 })
+let cityMarkers = {};
+let cityStatus = {};
+for (const [key, coords] of Object.entries(cities)) {
+  const marker = L.circleMarker(coords, { radius: 10, color: "blue", fillColor: "blue", fillOpacity: 0.8 })
     .addTo(map)
-    .bindPopup(`Дрон в ${city}`);
-  droneMarkers[city] = marker;
+    .bindPopup(cityNames[key]);
+  cityMarkers[key] = marker;
+  cityStatus[key] = "off";
 }
 
-// --- Функція оновлення карти з API
-function updateMap() {
-  alertCitiesDiv.innerHTML = "";
-  droneCitiesDiv.innerHTML = "";
+// --- Статичні дрони (пізніше можна підключити API)
+const drones = { kyiv:[50.46,30.52], lviv:[49.84,24.03] };
+let droneMarkers = {};
+for(const [city, coords] of Object.entries(drones)){
+  const marker = L.circleMarker(coords,{radius:6,color:"yellow",fillColor:"yellow",fillOpacity:0.9})
+    .addTo(map).bindPopup(`Дрон в ${cityNames[city]}`);
+  droneMarkers[city]=marker;
+}
+
+// --- Функція оновлення карти
+function updateMap(){
+  alertCitiesDiv.innerHTML="";
+  highCitiesDiv.innerHTML="";
+  droneCitiesDiv.innerHTML="";
 
   fetch("https://alerts.in.ua/data.json")
-    .then(res => res.json())
-    .then(data => {
-      // Скидаємо всі міста
-      for (const city in cityStatus) cityStatus[city] = "off";
+    .then(res=>res.json())
+    .then(data=>{
+      for(const city in cityStatus) cityStatus[city]="off";
 
-      // Оновлюємо статуси міст по даним з API
-      data.forEach(alert => {
+      data.forEach(alert=>{
         const city = alert.city.toLowerCase();
-        if (city in cityStatus) {
-          if (alert.type === "повітряна") cityStatus[city] = "on";
-          if (alert.type === "підвищена") cityStatus[city] = "high";
+        if(city in cityStatus){
+          if(alert.type==="повітряна") cityStatus[city]="on";
+          if(alert.type==="підвищена") cityStatus[city]="high";
         }
       });
 
-      // Оновлюємо маркери на карті
-      for (const [city, marker] of Object.entries(cityMarkers)) {
+      for(const [city, marker] of Object.entries(cityMarkers)){
         const status = cityStatus[city];
-        if (status === "on") marker.setStyle({ color: "red", fillColor: "red" });
-        else if (status === "high") marker.setStyle({ color: "orange", fillColor: "orange" });
-        else marker.setStyle({ color: "blue", fillColor: "blue" });
+        if(status==="on") marker.setStyle({color:"red",fillColor:"red"});
+        else if(status==="high") marker.setStyle({color:"orange",fillColor:"orange"});
+        else marker.setStyle({color:"blue",fillColor:"blue"});
       }
 
-      // Оновлюємо блоки під картою
-      const alertsOn = Object.keys(cityStatus).filter(c => cityStatus[c] === "on");
-      const alertsHigh = Object.keys(cityStatus).filter(c => cityStatus[c] === "high");
-      alertCitiesDiv.innerHTML = `<b>Повітряна тривога:</b> ${alertsOn.join(", ") || "немає"}`;
-      droneCitiesDiv.innerHTML = `<b>Підвищена небезпека:</b> ${alertsHigh.join(", ") || "немає"}`;
+      const alertsOn = Object.keys(cityStatus).filter(c=>cityStatus[c]==="on");
+      const alertsHigh = Object.keys(cityStatus).filter(c=>cityStatus[c]==="high");
+
+      alertCitiesDiv.innerHTML=`<b>Повітряна тривога:</b> ${alertsOn.map(c=>cityNames[c]).join(", ") || "немає"}`;
+      highCitiesDiv.innerHTML=`<b>Підвищена небезпека:</b> ${alertsHigh.map(c=>cityNames[c]).join(", ") || "немає"}`;
+      droneCitiesDiv.innerHTML=`<b>Дрони літають в:</b> ${Object.keys(drones).map(c=>cityNames[c]).join(", ") || "немає"}`;
     });
 }
 
-// --- Кнопка оновлення
 reloadBtn.addEventListener("click", updateMap);
-
-// --- При старті
 updateMap();
