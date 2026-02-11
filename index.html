@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Мапа Повітряних Тривог</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>Мапа Повітряних Тривог</h1>
+    <button id="themeToggle" class="btn small">🌙</button>
+  </header>
+
+  <main class="container">
+    <div class="card fade-in">
+
+      <div class="controls">
+        <select id="citySelect" class="select">
+          <option value="">Оберіть ваше місто</option>
+          <option value="kyiv">Київ</option>
+          <option value="lviv">Львів</option>
+          <option value="kharkiv">Харків</option>
+          <option value="odesa">Одеса</option>
+          <option value="dnipro">Дніпро</option>
+        </select>
+
+        <button id="reloadMap" class="btn primary">
+          Оновити карту
+        </button>
+      </div>
+
+      <div class="map-wrapper">
+        <div id="loader" class="loader"></div>
+        <iframe
+          id="alertMap"
+          src="https://alerts.in.ua/"
+          loading="lazy"
+          allowfullscreen>
+        </iframe>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    by.gamers © 2026
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
