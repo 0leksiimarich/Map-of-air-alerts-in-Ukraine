@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта Повітряних Тривог України</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        
+        #header {
+            background: linear-gradient(135deg, #0057b7 0%, #ffd700 100%);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-size: 2em;
+        }
+        
+        #info-panel {
+            background: #16213e;
+            padding: 15px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .info-box {
+            background: #0f3460;
+            padding: 15px 25px;
+            border-radius: 10px;
+            border-left: 4px solid #ffd700;
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .info-box h3 {
+            color: #ffd700;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        .info-box p {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        #map {
+            height: calc(100vh - 200px);
+            width: 100%;
+        }
+        
+        .alert-active {
+            background: #e74c3c !important;
+            border-left-color: #c0392b !important;
+        }
+        
+        .alert-active p {
+            color: #fff;
+        }
+        
+        .legend {
+            background: rgba(22, 33, 62, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            line-height: 1.8;
+            color: #eee;
+            border: 2px solid #ffd700;
+        }
+        
+        .legend h4 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .legend-color {
+            width: 25px;
+            height: 25px;
+            margin-right: 10px;
+            border-radius: 4px;
+            border: 1px solid #fff;
+        }
+        
+        .status-message {
+            background: #0f3460;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #ffd700;
+        }
+        
+        .popup-content {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .popup-content h3 {
+            color: #0057b7;
+            margin-bottom: 10px;
+        }
+        
+        .threat-info {
+            background: #ffe6e6;
+            padding: 8px;
+            border-radius: 5px;
+            margin: 5px 0;
+            border-left: 3px solid #e74c3c;
+        }
+        
+        .safe-info {
+            background: #e6ffe6;
+            padding: 8px;
+            border-radius: 5px;
+            margin: 5px 0;
+            border-left: 3px solid #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>🚨 Карта Повітряних Тривог України 🇺🇦</h1>
+    </div>
+    
+    <div id="info-panel">
+        <div class="info-box" id="active-alerts-box">
+            <h3>Активні тривоги</h3>
+            <p id="active-count">-</p>
+        </div>
+        <div class="info-box">
+            <h3>Регіонів у безпеці</h3>
+            <p id="safe-count">-</p>
+        </div>
+        <div class="info-box">
+            <h3>Останнє оновлення</h3>
+            <p id="last-update" style="font-size: 1em;">Завантаження...</p>
+        </div>
+    </div>
+    
+    <div class="status-message" id="status">
+        Підключення до джерел даних...
+    </div>
+    
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Ініціалізація карти
+        const map = L.map('map').setView([48.5, 31.5], 6);
+
+        // Базовий шар карти
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Координати регіонів України
+        const regions = {
+            "Вінницька": [49.233083, 28.468217],
+            "Волинська": [50.747231, 25.325432],
+            "Дніпропетровська": [48.464717, 35.046183],
+            "Донецька": [48.015883, 37.80285],
+            "Житомирська": [50.254417, 28.658667],
+            "Закарпатська": [48.6208, 22.2879],
+            "Запорізька": [47.838800, 35.139567],
+            "Івано-Франківська": [48.922633, 24.711117],
+            "Київська": [50.4501, 30.5234],
+            "Кіровоградська": [48.507933, 32.262517],
+            "Луганська": [48.574100, 39.307815],
+            "Львівська": [49.839683, 24.029717],
+            "Миколаївська": [46.975033, 32.0],
+            "Одеська": [46.482583, 30.7233],
+            "Полтавська": [49.588267, 34.551417],
+            "Рівненська": [50.619900, 26.251617],
+            "Сумська": [50.9077, 34.7981],
+            "Тернопільська": [49.553517, 25.594767],
+            "Харківська": [49.993500, 36.230383],
+            "Херсонська": [46.635417, 32.616867],
+            "Хмельницька": [49.422983, 26.987217],
+            "Черкаська": [49.444433, 32.059767],
+            "Чернівецька": [48.291933, 25.935267],
+            "Чернігівська": [51.4982, 31.2893],
+            "Київ": [50.4501, 30.5234],
+            "АР Крим": [45.0, 34.0]
+        };
+
+        let markers = {};
+        let alertData = {};
+
+        // Спеціальні маркери для РФ та Білорусі
+        const poopIcon = L.divIcon({
+            html: '💩',
+            className: 'emoji-icon',
+            iconSize: [40, 40]
+        });
+
+        const potatoIcon = L.divIcon({
+            html: '🥔',
+            className: 'emoji-icon',
+            iconSize: [35, 35]
+        });
+
+        // Позначення РФ (кал)
+        L.marker([55.7558, 37.6173], {icon: poopIcon})
+            .addTo(map)
+            .bindPopup('<b>🚫 Джерело агресії</b><br>Не є туристичною локацією');
+
+        // Позначення Білорусі (картопля)
+        L.marker([53.9045, 27.5615], {icon: potatoIcon})
+            .addTo(map)
+            .bindPopup('<b>🥔 Картопляна диктатура</b><br>Співучасник агресії');
+
+        // Створення маркерів для регіонів
+        Object.keys(regions).forEach(region => {
+            const marker = L.circleMarker(regions[region], {
+                radius: 12,
+                fillColor: '#27ae60',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.7
+            }).addTo(map);
+            
+            markers[region] = marker;
+            marker.bindPopup(`<div class="popup-content"><h3>${region}</h3><p>Завантаження даних...</p></div>`);
+        });
+
+        // Легенда
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <h4>🛡️ Легенда</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #27ae60;"></div>
+                    <span>Без тривоги</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Повітряна тривога</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span>Загроза дронів</span>
+                </div>
+                <div class="legend-item">
+                    <span style="font-size: 20px; margin-right: 10px;">💩</span>
+                    <span>Країна-агресор</span>
+                </div>
+                <div class="legend-item">
+                    <span style="font-size: 20px; margin-right: 10px;">🥔</span>
+                    <span>Картопляний режим</span>
+                </div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
+
+        // Функція оновлення даних
+        async function updateAlerts() {
+            try {
+                // Спроба підключення до API alerts.in.ua
+                const response = await fetch('https://api.alerts.in.ua/v1/alerts/active.json');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateMapWithData(data);
+                    document.getElementById('status').innerHTML = '✅ Дані оновлені успішно';
+                } else {
+                    throw new Error('API недоступний');
+                }
+            } catch (error) {
+                console.log('Помилка підключення до API:', error);
+                document.getElementById('status').innerHTML = 
+                    '⚠️ Демо-режим (для реальних даних потрібен доступ до API alerts.in.ua)';
+                useDemoData();
+            }
+        }
+
+        // Оновлення карти з отриманими даними
+        function updateMapWithData(data) {
+            let activeCount = 0;
+            alertData = data;
+
+            Object.keys(markers).forEach(region => {
+                const regionData = data.find(item => item.location_title === region);
+                const marker = markers[region];
+                
+                if (regionData && regionData.active_alerts && regionData.active_alerts.length > 0) {
+                    marker.setStyle({
+                        fillColor: '#e74c3c',
+                        radius: 15
+                    });
+                    activeCount++;
+                    
+                    let popupContent = `<div class="popup-content"><h3>${region}</h3>`;
+                    popupContent += `<div class="threat-info"><strong>🚨 ПОВІТРЯНА ТРИВОГА!</strong><br>`;
+                    
+                    regionData.active_alerts.forEach(alert => {
+                        popupContent += `Тип: ${alert.type || 'Невідомо'}<br>`;
+                    });
+                    
+                    popupContent += `</div></div>`;
+                    marker.bindPopup(popupContent);
+                } else {
+                    marker.setStyle({
+                        fillColor: '#27ae60',
+                        radius: 12
+                    });
+                    marker.bindPopup(`<div class="popup-content"><h3>${region}</h3><div class="safe-info">✅ Тривоги немає</div></div>`);
+                }
+            });
+
+            document.getElementById('active-count').textContent = activeCount;
+            document.getElementById('safe-count').textContent = Object.keys(regions).length - activeCount;
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString('uk-UA');
+            
+            const activeBox = document.getElementById('active-alerts-box');
+            if (activeCount > 0) {
+                activeBox.classList.add('alert-active');
+            } else {
+                activeBox.classList.remove('alert-active');
+            }
+        }
+
+        // Демо-дані для прикладу
+        function useDemoData() {
+            const demoRegions = ['Київ', 'Харківська', 'Донецька'];
+            let activeCount = 0;
+
+            Object.keys(markers).forEach(region => {
+                const marker = markers[region];
+                
+                if (demoRegions.includes(region)) {
+                    marker.setStyle({
+                        fillColor: '#e74c3c',
+                        radius: 15
+                    });
+                    activeCount++;
+                    marker.bindPopup(`
+                        <div class="popup-content">
+                            <h3>${region}</h3>
+                            <div class="threat-info">
+                                <strong>🚨 ПОВІТРЯНА ТРИВОГА!</strong><br>
+                                Тип: Балістична загроза (демо)<br>
+                                <em>Це демо-дані</em>
+                            </div>
+                        </div>
+                    `);
+                } else {
+                    marker.setStyle({
+                        fillColor: '#27ae60',
+                        radius: 12
+                    });
+                    marker.bindPopup(`
+                        <div class="popup-content">
+                            <h3>${region}</h3>
+                            <div class="safe-info">✅ Тривоги немає</div>
+                        </div>
+                    `);
+                }
+            });
+
+            document.getElementById('active-count').textContent = activeCount;
+            document.getElementById('safe-count').textContent = Object.keys(regions).length - activeCount;
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString('uk-UA');
+        }
+
+        // Початкове завантаження
+        updateAlerts();
+
+        // Автооновлення кожні 30 секунд
+        setInterval(updateAlerts, 30000);
+    </script>
+</body>
+</html>
