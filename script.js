@@ -35,7 +35,8 @@ function loadAlerts(city = "") {
     .then(res => res.json())
     .then(data => {
       data.forEach(alert => {
-        if (!city || alert.city.toLowerCase() === city) {
+        // фільтр: враховує регістр та кирилицю
+        if (!city || alert.city.toLowerCase().includes(city)) {
           const marker = L.marker([alert.lat, alert.lon])
             .addTo(map)
             .bindPopup(`<b>${alert.city}</b><br>${alert.type}`);
