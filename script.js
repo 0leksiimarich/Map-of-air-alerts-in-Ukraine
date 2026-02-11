@@ -45,6 +45,8 @@ const cities = {
   poltava: [49.5883, 34.5514],
   khmelnytskyi: [49.4216, 26.9965],
   cherkasy: [49.4444, 32.0598]
+  lugansk: [48.5730, 39.3078],
+  donetsk: [48.0159, 37.8028]
 };
 
 const cityNames = {
@@ -54,7 +56,8 @@ const cityNames = {
   rivne: "Рівне", zhytomyr: "Житомир", chernihiv: "Чернігів",
   chernivtsi: "Чернівці", sumy: "Суми", kropyvnytskyi: "Кропивницький",
   mykolaiv: "Миколаїв", lutsk: "Луцьк", kherson: "Херсон",
-  poltava: "Полтава", khmelnytskyi: "Хмельницький", cherkasy: "Черкаси"
+  poltava: "Полтава", khmelnytskyi: "Хмельницький", cherkasy: "Черкаси",
+  lugansk: "Луганськ", donetsk: "Донецьк"
 };
 
 let cityMarkers = {};
