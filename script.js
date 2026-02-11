@@ -9,7 +9,22 @@ const cityLinks = {
   lviv: "https://alerts.in.ua/lviv",
   kharkiv: "https://alerts.in.ua/kharkiv",
   odesa: "https://alerts.in.ua/odesa",
-  dnipro: "https://alerts.in.ua/dnipro"
+  dnipro: "https://alerts.in.ua/dnipro",
+  zaporizhzhia: "https://alerts.in.ua/zaporizhzhia",
+  vinnytsia: "https://alerts.in.ua/vinnytsia",
+  ternopil: "https://alerts.in.ua/ternopil",
+  "ivano-frankivsk": "https://alerts.in.ua/ivano-frankivsk",
+  rivne: "https://alerts.in.ua/rivne",
+  zhytomyr: "https://alerts.in.ua/zhytomyr",
+  chernihiv: "https://alerts.in.ua/chernihiv",
+  chernivtsi: "https://alerts.in.ua/chernivtsi",
+  sumy: "https://alerts.in.ua/sumy",
+  kropyvnytskyi: "https://alerts.in.ua/kropyvnytskyi",
+  mykolaiv: "https://alerts.in.ua/mykolaiv",
+  lutsk: "https://alerts.in.ua/lutsk",
+  kherson: "https://alerts.in.ua/kherson",
+  poltava: "https://alerts.in.ua/poltava",
+  khmelnytskyi: "https://alerts.in.ua/khmelnytskyi"
 };
 
 function setTheme(theme) {
