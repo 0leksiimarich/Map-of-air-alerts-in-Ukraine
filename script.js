@@ -1,31 +1,6 @@
 const themeToggle = document.getElementById("themeToggle");
 const reloadBtn = document.getElementById("reloadMap");
-const iframe = document.getElementById("alertMap");
-const loader = document.getElementById("loader");
 const citySelect = document.getElementById("citySelect");
-
-const cityLinks = {
-  kyiv: "https://alerts.in.ua/kyiv",
-  lviv: "https://alerts.in.ua/lviv",
-  kharkiv: "https://alerts.in.ua/kharkiv",
-  odesa: "https://alerts.in.ua/odesa",
-  dnipro: "https://alerts.in.ua/dnipro",
-  zaporizhzhia: "https://alerts.in.ua/zaporizhzhia",
-  vinnytsia: "https://alerts.in.ua/vinnytsia",
-  ternopil: "https://alerts.in.ua/ternopil",
-  "ivano-frankivsk": "https://alerts.in.ua/ivano-frankivsk",
-  rivne: "https://alerts.in.ua/rivne",
-  zhytomyr: "https://alerts.in.ua/zhytomyr",
-  chernihiv: "https://alerts.in.ua/chernihiv",
-  chernivtsi: "https://alerts.in.ua/chernivtsi",
-  sumy: "https://alerts.in.ua/sumy",
-  kropyvnytskyi: "https://alerts.in.ua/kropyvnytskyi",
-  mykolaiv: "https://alerts.in.ua/mykolaiv",
-  lutsk: "https://alerts.in.ua/lutsk",
-  kherson: "https://alerts.in.ua/kherson",
-  poltava: "https://alerts.in.ua/poltava",
-  khmelnytskyi: "https://alerts.in.ua/khmelnytskyi"
-};
 
 function setTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
@@ -41,26 +16,46 @@ themeToggle.addEventListener("click", () => {
   setTheme(current === "dark" ? "light" : "dark");
 });
 
-reloadBtn.addEventListener("click", () => {
-  loader.style.display = "flex";
-  iframe.src = iframe.src;
-});
+// Ініціалізація карти
+const map = L.map("map").setView([49.0, 32.0], 6);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "&copy; OpenStreetMap contributors"
+}).addTo(map);
 
-iframe.addEventListener("load", () => {
-  loader.style.display = "none";
-});
+let markers = [];
 
-const savedCity = localStorage.getItem("city");
-if (savedCity && cityLinks[savedCity]) {
-  citySelect.value = savedCity;
-  iframe.src = cityLinks[savedCity];
+// Функція завантаження тривог
+function loadAlerts(city = "") {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  const url = "https://alerts.in.ua/data.json"; // приклад відкритого JSON
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      data.forEach(alert => {
+        if (!city || alert.city.toLowerCase() === city) {
+          const marker = L.marker([alert.lat, alert.lon])
+            .addTo(map)
+            .bindPopup(`<b>${alert.city}</b><br>${alert.type}`);
+          markers.push(marker);
+        }
+      });
+    });
 }
 
+const savedCity = localStorage.getItem("city") || "";
+if (savedCity) citySelect.value = savedCity;
+loadAlerts(savedCity);
+
 citySelect.addEventListener("change", () => {
-  const city = citySelect.value;
-  if (cityLinks[city]) {
-    loader.style.display = "flex";
-    iframe.src = cityLinks[city];
-    localStorage.setItem("city", city);
-  }
+  const city = citySelect.value.toLowerCase();
+  localStorage.setItem("city", city);
+  loadAlerts(city);
+});
+
+reloadBtn.addEventListener("click", () => {
+  const city = citySelect.value.toLowerCase();
+  loadAlerts(city);
 });
